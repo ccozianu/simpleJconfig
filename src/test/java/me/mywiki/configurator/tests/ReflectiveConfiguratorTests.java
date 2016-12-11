@@ -6,6 +6,8 @@ import static org.junit.Assert.*;
 import java.util.function.Function;
 
 import static org.hamcrest.core.Is.*;
+
+import org.hamcrest.core.StringContains;
 import org.junit.Test;
 import org.junit.experimental.categories.Categories.ExcludeCategory;
 
@@ -122,7 +124,11 @@ public class ReflectiveConfiguratorTests {
         assertThat(config2.intVal1(), is(1));
         assertThat(config2.strVal2(), is("val2"));
         assertThat(config2.transformedVal(), is("val2.val2"));
-        
+        String ts = config2.toString();
+        assertThat(ts, StringContains.containsString("intVal1=1"));
+        assertThat(ts, StringContains.containsString("transformedVal=val2.val2"));
+        assertThat(ts, StringContains.containsString("strVal2=val2"));
     }
+    
 
 }

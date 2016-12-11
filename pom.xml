@@ -3,7 +3,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>me.mywiki</groupId>
-  <artifactId>mywikiConfig</artifactId>
+  <artifactId>simpleJconfig</artifactId>
   <version>0.0.2-SNAPSHOT</version>
   <dependencies>
   	<dependency>
@@ -11,12 +11,14 @@
   		<artifactId>commons-lang3</artifactId>
   		<version>3.3</version>
   	</dependency>
+  	
+  	<!-- Guava is used strictly for Verify and Preconditions -->
   	<dependency>
   		<groupId>com.google.guava</groupId>
   		<artifactId>guava</artifactId>
   		<version>[19.0, )</version>
   	</dependency>
-  	
+
   	 <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

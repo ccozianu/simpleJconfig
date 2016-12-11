@@ -21,14 +21,59 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 /**
+ * <p>
  * A configuration is a map from name to values,
  * as such the contract for configuration is to map
  * what names are associated with each values
  * and provide a convenient mechanism for instantiating full maps
+ * </p>
+ * The contract between this library 
+ * User defines 2 interfaces: the configuration interface is a read-only interface,
+ * representing the completed (ready to consume) configuration
+ *  example:
+ *  
+ *  <pre>
+ *    interface MyConfiguration {
+ *        String myProperty1()
+ *        int  whateverName()
+ *        MyValueClass myPropety3()
+ *        // A configuration most likely needs to be composited hierarchically
+ *        MySubConfiguration subConfiguration()
+ *        // ... and so on
+ *    }
+ *   </pre>
+ *  
+ *    That's on one hand, the read-only interface defines the finished product (the sausage)
+ *    
+ *    In addition the client needs to declare how the sausage is made with a builder interface
+
+ *    <pre>
+ *    interface MyConfigurationBuilder {
+ *      
+ *      // All setters method will "return this" allowing setters chaining
+ *      // A setter is any method that takes one parameter and return the bvuilder type 
+ *      MyConfigurationBuilder myProperty1 ( String val_ );
+ *      MyConfigurationBuilder whateverName ( int val_ );
+ *      MyConfigurationBuilder myProperty3(  MyValueClass val_ );
+ *      MyConfigurationBuilder subConfiguration ( MySubConfiguration sub_ );
+ *      // ...
+ *      
+ *      // special methods
+ *      // done finishes the building phase, and constructs the finished product
+ *      // It'll throw IllegalStateException if not all properties have been set
+ *      MyConfiguration done();
+ *    }
+ *    </pre>
+ *    
  */
 public class ReflectiveConfigurator {
 
-
+    
+        /**
+         * DefaultsToString can be attached to any string read-property
+         * specifying that in case the property is not explicitly set by the builder
+         * it will be defaulted to the anotation value
+         */
         @Retention(RetentionPolicy.RUNTIME) 
         @Target({ElementType.METHOD}) 
         public static @interface DefaultsToString {
@@ -36,8 +81,7 @@ public class ReflectiveConfigurator {
         }
         
         /**
-         * In case the property specifies an integer, 
-         * defines the default int value for that property
+         * Declare default value for int propety that it annotates
          */
         @Retention(RetentionPolicy.RUNTIME) 
         @Target({ElementType.METHOD}) 
@@ -47,8 +91,7 @@ public class ReflectiveConfigurator {
         
         /**
          * When the configuration value is a class
-         * provides the default value in case the property is not 
-         * set in the builder
+         * provides the default value in case the property is not set in the builder
          */
         @Retention(RetentionPolicy.RUNTIME) 
         @Target({ElementType.METHOD}) 
@@ -72,7 +115,7 @@ public class ReflectiveConfigurator {
                                       Class<Builder> builderClass ) 
         {
             try {
-             return new  ReflectiveBuilderImpl <Reader, Builder>( readerClass, builderClass)
+                return new  ReflectiveBuilderImpl <Reader, Builder>( readerClass, builderClass)
                                         .makeBuilder();
             }
             catch (Exception ex) {
@@ -85,13 +128,6 @@ public class ReflectiveConfigurator {
         {
             private static final long serialVersionUID = 1L;
 
-            public MissingPropertyException() {
-                super();
-            }
-
-            public MissingPropertyException(String message, Throwable cause) {
-                super(message, cause);
-            }
 
             public MissingPropertyException(String message) {
                 super(message);
@@ -127,7 +163,11 @@ public class ReflectiveConfigurator {
             }
             
 
-
+            /**
+             * Checks that the builder interface matches the reader interface
+             * @return a tuple containing all the property names, and a Map from 
+             * propertyNames to the optional transforming function
+             */
             private static 
                 Pair<Set<String>, Map<String,Function>>
                     checkAgainstSpec( Class<?> readerClass_,

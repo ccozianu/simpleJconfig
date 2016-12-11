@@ -39,7 +39,7 @@ public class ReflectiveConfiguratorTests {
      * - hashCode() and equals() are implemented correctly
      */
     @Test
-    public void testCase1() {
+    public void testBasic() {
         Configuration1 config11= ReflectiveConfigurator.configBuilderFor( Configuration1.class, Configuration1.Builder.class)
                                 .property1("value1")
                                 .property2(5)
@@ -69,9 +69,19 @@ public class ReflectiveConfiguratorTests {
      */
     @Test( expected = MissingPropertyException.class )
     public void testMissingPropertiesAreThrown() {
-        Configuration1 config11= ReflectiveConfigurator.configBuilderFor( Configuration1.class, Configuration1.Builder.class)
+        //this should throw
+        ReflectiveConfigurator.configBuilderFor( Configuration1.class, Configuration1.Builder.class)
                 .property1("value1")
                 .done();   
+    }
+    
+    interface InvalidTestBuilder {
+        String invalid(String x);
+    }
+    
+    @Test ( expected = RuntimeException.class)
+    public void testInvalidBuilderThrows() {
+        ReflectiveConfigurator.configBuilderFor(Configuration1.class, InvalidTestBuilder.class);
     }
 
     /**
@@ -102,7 +112,8 @@ public class ReflectiveConfiguratorTests {
     }
     
     @Test
-    public void testCase2() {
+    public void testTransformAnnotation() {
+
         Configuration2 config2= ReflectiveConfigurator.configBuilderFor( Configuration2.class, Configuration2.Builder.class)
                                 .intVal1(1)
                                 .strVal2("val2")

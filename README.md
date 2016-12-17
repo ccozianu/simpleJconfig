@@ -86,7 +86,7 @@ Now, the developer having ***declared*** this ***pair of matching interfaces*** 
  
 Note in the code above, the usage of cloneBuilder() which is utilize to "clone" configuration object in order to change only a few parameters.
  
-''' That's all folks ! ''' . 
+*** That's all folks ! *** 
 
 Well not quite, this package has a few extra goodies (like default values, transform functions , such that we do not have to store passwords in clear text as in the contrived example above, to be detailed as the time allows. Plus, there's so,mething to be said about rationale.
 

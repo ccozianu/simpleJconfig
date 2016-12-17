@@ -9,7 +9,7 @@ This will be explained in due course, the reason this modest package is in exist
 
 # The contract at first glance.
 
-A configuration is a set of name value pairs, and because we are in Java world we like to thin as a set of ***typed*** name value pairs. In Java we model this with an interface:
+A configuration is a set of name value pairs, and because we are in Java world we like to thin as a set of ***typed*** name value pairs. In Java we model this with an interface, like in this example :
 
 
 ```java
@@ -22,6 +22,13 @@ A configuration is a set of name value pairs, and because we are in Java world w
      * when requesting the connextion
      */
     Properties extraProperties();
+    
+    // imagine we'll be using some connection pooling library
+    int maxOpenConnections();
+    
+    // optionally, the Config interface may contai
+    // a special method with the following signature, to be explained later
+    MyDbConfiBuilder cloneBuilder()
   }
 ```
 
@@ -45,6 +52,37 @@ So what is the builder in this case ? Let's declare it as an interface we expect
      MyDbConfigBuilder username(String val_);
      MyDbConfigBuilder password(String val_);
      MyDbConfigBuilder extraProperties(Properties props);
+     MyDbConfigBuilder maxOpenConnections (int max);
+     
      MyDbConfig done();
    }
 ```
+
+Now, the developer having ***declared*** this ***pair of matching interfaces*** is pretty much done in the sense that the rather boring task of implementing these interfaces is left for the framework. So let's construct a set of configurations:
+
+```java
+     class ValidConfigurations {
+        
+        public static PROD_DB_CONFIG = ReflectiveConfigurator.configBuilderFor( MyDbConfig.class, MyDbConfigBuilder.class)
+                                          .jdbcUrl("jdbc:oracle:thin:@//myProdDbServer:1521/orcl")
+                                          .username("blah")
+                                          .password("blah")
+                                          .maxConnections(20)
+                                          .done();
+        public static DEV_DB_CONFIG = ReflectiveConfigurator.configBuilderFor( MyDbConfig.class, MyDbConfigBuilder.class)
+                                          .jdbcUrl("jdbc:oracle:thin:@//localhost:1521/orcl")
+                                          .username("devblah")
+                                          .password("devblah")
+                                          .maxConnections(5)
+                                          .done();                                          
+
+        public static PROD_STANDBY_DBCONFIG = 
+                                        PROD_DB_CONFIG.cloneBuilder()
+                                          .jdbcUrl("jdbc:oracle:thin:@//standbyDBserver:1521/orcl")
+                                          .done();                                          
+
+    }
+```    
+ 
+Note in the code above, the usage of cloneBuilder() which is utilize to "clone" configuration object in order to change only a few parameters.
+ 

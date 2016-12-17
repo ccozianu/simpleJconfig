@@ -30,7 +30,9 @@ Now if somebody supplies a MyDbConfig object to us, that's all we need to know t
 
 ```java
   class MyDbInteractions {
+    private final MyDbConfig dbConfig;
     MyDbInteractions( MyDbConfig dbConfig_ ) { this.dbConfig = dbConfig_; } // and we're in business
+    // ... 
   }
 ```
 But who's gonna give us those values, somebody needs to gather those values and put them together, and since typical applications have a lot more than 3 config values, we tend to need to use a builder patternt to construct the object that implements the config interface. 

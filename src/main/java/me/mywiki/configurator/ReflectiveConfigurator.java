@@ -14,11 +14,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 
 /**
  * <p>
@@ -173,20 +172,20 @@ public class ReflectiveConfigurator {
                     checkAgainstSpec( Class<?> readerClass_,
                                       Class<?> builderClass_) throws Exception
             {
-                Preconditions.checkArgument(builderClass_.isInterface(), "builder should be an interface"); 
+                Validate.isTrue(builderClass_.isInterface(), "builder should be an interface"); 
                 
                 Set<String> builderPropNames= new HashSet<>();
                 
                 for (Method m: builderClass_.getDeclaredMethods()) {
                     String mName= m.getName();
                     if (mName.equals("done")) {
-                        Preconditions.checkArgument(  0 == m.getParameterCount(),"done is a method with 0 paramters");
-                        Preconditions.checkArgument(m.getReturnType().equals(readerClass_), "done returns the reader object");
+                    	Validate.isTrue(  0 == m.getParameterCount(),"done is a method with 0 paramters");
+                    	Validate.isTrue(m.getReturnType().equals(readerClass_), "done returns the reader object");
                         continue;
                     }
                     // all other methods are setter of form Builder propertyName(PropType val);
-                    Preconditions.checkArgument(1 == m.getParameterCount(), "setter method: "+mName );
-                    Preconditions.checkArgument(builderClass_.equals(m.getReturnType()), "returning a builder for"+mName );
+                    Validate.isTrue(1 == m.getParameterCount(), "setter method: "+mName );
+                    Validate.isTrue(builderClass_.equals(m.getReturnType()), "returning a builder for"+mName );
                     builderPropNames.add(mName);
                 }
 
@@ -197,12 +196,12 @@ public class ReflectiveConfigurator {
                 for (Method m: readerClass_.getMethods()) {
                     String mName= m.getName();
                     if (mName.equals("cloneBuilder")) {
-                        Preconditions.checkArgument(  0 == m.getParameterCount(), "cloneBuilder is a method with 0 paramters" );
-                        Preconditions.checkArgument( m.getReturnType().equals(builderClass_), "cloneBuilder returns the builder");
+                    	Validate.isTrue(  0 == m.getParameterCount(), "cloneBuilder is a method with 0 paramters" );
+                    	Validate.isTrue( m.getReturnType().equals(builderClass_), "cloneBuilder returns the builder");
                         continue;
                     }
                     // all other methods are setter of form Builder propertyName(PropType val);
-                    Preconditions.checkArgument( 0== m.getParameterCount() ,"getter method has 0 params "+mName );
+                    Validate.isTrue( 0== m.getParameterCount() ,"getter method has 0 params "+mName );
                     readerPropNames.add(mName);
                     TransformBy transform= m.getDeclaredAnnotation(TransformBy.class);
                     if (transform != null) {
@@ -210,7 +209,7 @@ public class ReflectiveConfigurator {
                     }
                 }
                 
-                Preconditions.checkArgument( readerPropNames.equals(builderPropNames), "Reader properties match builder properties");
+                Validate.isTrue( readerPropNames.equals(builderPropNames), "Reader properties match builder properties");
                 return new ImmutablePair<Set<String>, Map<String,Function>>(readerPropNames,transformers);
             }
 
@@ -307,18 +306,18 @@ public class ReflectiveConfigurator {
                     // Begin special cases of ReadOnly interface
                         case "cloneBuilder":  { return makeBuilder(this.myValueMap); }
                     
-                        case "toString": { Verify.verify(args == null); 
+                        case "toString": { Validate.isTrue(args == null); 
                                            return myValueMap.toString(); }
-                        case "__internalMap":  { Verify.verify(args == null);
+                        case "__internalMap":  { Validate.isTrue(args == null);
                                                  return this.myValueMap; }
                     
-                        case "equals" : { Verify.verify(args.length == 1);
+                        case "equals" : { Validate.isTrue(args.length == 1);
                                           if (args[0] == null) return false;
                                           if (! (args[0] instanceof InternalReaderAccess ))
                                               return false;
                                           return (this.myValueMap.equals(((InternalReaderAccess) args[0]).__internalMap()));
                                         }
-                        case "hashCode" : { Verify.verify(args == null);
+                        case "hashCode" : { Validate.isTrue(args == null);
                                             return myValueMap.hashCode();
                                            }
                     } //End special cases

@@ -28,11 +28,12 @@
   </developers>
   
   <scm>
-  	<connection>scm:git:git://github.com/simpligility/ossrh-demo.git</connection>
+  	<!-- <connection>scm:git:git://github.com/simpligility/ossrh-demo.git</connection> -->
   	<developerConnection>scm:git:ssh:git@github.com:ccozianu/simpleJconfig.git</developerConnection>
   	<url>https://github.com/ccozianu/simpleJconfig/tree/master</url>
  </scm>
  
+ <!--  temporarily commented out until I have a better story publishing from pipeline
  <distributionManagement>
   <snapshotRepository>
    <id>ossrh</id>
@@ -43,7 +44,7 @@
    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
   </repository>
  </distributionManagement>
- 
+ -->
  <dependencies>
   	<dependency>
   		<groupId>org.apache.commons</groupId>

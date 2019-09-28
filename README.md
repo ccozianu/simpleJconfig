@@ -1,9 +1,8 @@
 # Simple configuration for Java
 
-This modest package tries to solve a very simple but very persistent and annoying problem : supplying configuration values , such as Urls, database passwords
-and the likes.
+This modest package tries to solve a very simple but very persistent and annoying problem : ***suplying configuration values*** , such as Urls, database passwords and the likes.
 
-The astute reader will surely ask if the author of the package has gone mad and decided to reinvent the wheel that other people have solved with .properties file or with countless and varied frameworks (Spring and Guava being the most popular to claim that they solve this particular problem and many more). 
+The astute reader will surely ask if the author of the package has gone mad and decided to reinvent the wheel that other people have solved with everything from old .properties file to XML, Json, Yaml in conjunction with countless and varied frameworks (Spring and Guava being the most popular to claim that they solve this particular problem and many more), dependency injection and the likes. 
 
 This will be explained in due course, the reason this modest package is in existence is because the author has seen those and many other frameworks creating more and more serious problems than they solved.
 

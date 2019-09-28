@@ -4,7 +4,7 @@ This modest package tries to solve a very simple but very persistent and annoyin
 
 The astute readers will undoubtedly ask themselves if the author of this package has gone mad, given that many people have solved with everything from old .properties file to XML, Json, Yaml in conjunction with countless and varied frameworks (Spring and Guava being the most popular to claim that they solve this particular problem and many more), dependency injection and the likes. 
 
-This will be explained in due course. The reason this modest package is being in existence is because the author has had many experiences with most such things and have seen them creating more problems than solving one. If you have a configuration problem and try to solve it with dependency injection (spring/guava), now you're likely to have two problems.
+This will be explained in due course. The reason this modest package is being in existence is because the author has had many experiences with most such things and more often than not they end up creating more problems than they are solving. If you have a configuration problem and try to solve it with dependency injection (spring, guava etc), now you're likely to have two problems.
 
 # The contract at first glance.
 

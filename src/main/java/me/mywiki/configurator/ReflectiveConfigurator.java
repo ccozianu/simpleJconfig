@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 
 /**
@@ -148,34 +146,48 @@ public class ReflectiveConfigurator {
             //final Map<String,Object> valueMap= new HashMap<>();
             final Set<String> propNames;
             final Map<String, Function> transformers;
- 
-            ReflectiveBuilderImpl( Class<Reader> readerClass_, 
-                                   Class<Builder> builderClass_) 
+            final Map<String, Object> defaults;
+
+            ReflectiveBuilderImpl( Class<Reader> readerClass_,
+                                   Class<Builder> builderClass_)
                                     throws Exception
             {
                 this.builderClass= builderClass_;
                 this.readerClass= readerClass_;
-                Pair<Set<String>, Map<String,Function>> metadataCheck= checkAgainstSpec(readerClass, builderClass);
-                
-                this.propNames= metadataCheck.getLeft();
-                this.transformers= metadataCheck.getRight();
+                Metadata metadataCheck= checkAgainstSpec(readerClass, builderClass);
+
+                this.propNames= metadataCheck.propNames;
+                this.transformers= metadataCheck.transformers;
+                this.defaults= metadataCheck.defaults;
             }
-            
+
+            private static class Metadata {
+                final Set<String> propNames;
+                final Map<String, Function> transformers;
+                final Map<String, Object> defaults;
+                Metadata(Set<String> propNames_, Map<String, Function> transformers_, Map<String, Object> defaults_) {
+                    this.propNames= propNames_;
+                    this.transformers= transformers_;
+                    this.defaults= defaults_;
+                }
+            }
+
 
             /**
              * Checks that the builder interface matches the reader interface
-             * @return a tuple containing all the property names, and a Map from 
-             * propertyNames to the optional transforming function
+             * @return metadata containing all the property names, the optional transforming
+             * functions, and the defaults declared via @DefaultsTo* annotations
              */
-            private static 
-                Pair<Set<String>, Map<String,Function>>
+            private static
+                Metadata
                     checkAgainstSpec( Class<?> readerClass_,
                                       Class<?> builderClass_) throws Exception
             {
                 Validate.isTrue(builderClass_.isInterface(), "builder should be an interface"); 
                 
                 Set<String> builderPropNames= new HashSet<>();
-                
+                Map<String, Class<?>> builderPropTypes= new HashMap<>();
+
                 for (Method m: builderClass_.getDeclaredMethods()) {
                     String mName= m.getName();
                     if (mName.equals("done")) {
@@ -187,12 +199,14 @@ public class ReflectiveConfigurator {
                     Validate.isTrue(1 == m.getParameterCount(), "setter method: "+mName );
                     Validate.isTrue(builderClass_.equals(m.getReturnType()), "returning a builder for"+mName );
                     builderPropNames.add(mName);
+                    builderPropTypes.put(mName, m.getParameterTypes()[0]);
                 }
 
                 
                 Set <String> readerPropNames=  new HashSet<String>();
                 Map<String, Function> transformers= new HashMap<>();
-                
+                Map<String, Object> defaults= new HashMap<>();
+
                 for (Method m: readerClass_.getMethods()) {
                     String mName= m.getName();
                     if (mName.equals("cloneBuilder")) {
@@ -205,12 +219,46 @@ public class ReflectiveConfigurator {
                     readerPropNames.add(mName);
                     TransformBy transform= m.getDeclaredAnnotation(TransformBy.class);
                     if (transform != null) {
-                       transformers.put(mName, transform._fun().newInstance()); 
+                       transformers.put(mName, transform._fun().newInstance());
+                    }
+                    Class<?> getterType= m.getReturnType();
+                    // type-check: builder setter parameter type must match reader getter return type
+                    Class<?> setterType= builderPropTypes.get(mName);
+                    if (setterType != null) {
+                        Validate.isTrue( getterType.equals(setterType),
+                            "Property '%s': builder setter type (%s) must match reader getter type (%s)",
+                            mName, setterType.getName(), getterType.getName());
+                    }
+                    // collect @DefaultsTo* annotations, validating type compatibility against the getter
+                    DefaultsToString defStr= m.getDeclaredAnnotation(DefaultsToString.class);
+                    DefaultsToInteger defInt= m.getDeclaredAnnotation(DefaultsToInteger.class);
+                    DefaultsToClass defCls= m.getDeclaredAnnotation(DefaultsToClass.class);
+                    int defCount= (defStr != null ? 1 : 0) + (defInt != null ? 1 : 0) + (defCls != null ? 1 : 0);
+                    Validate.isTrue(defCount <= 1,
+                        "Property '%s': at most one @DefaultsTo* annotation allowed", mName);
+                    if (defStr != null) {
+                        Validate.isTrue(getterType.equals(String.class),
+                            "Property '%s': @DefaultsToString requires String getter, got %s",
+                            mName, getterType.getName());
+                        defaults.put(mName, defStr.val());
+                    }
+                    else if (defInt != null) {
+                        Validate.isTrue(getterType.equals(int.class) || getterType.equals(Integer.class),
+                            "Property '%s': @DefaultsToInteger requires int/Integer getter, got %s",
+                            mName, getterType.getName());
+                        defaults.put(mName, defInt.val());
+                    }
+                    else if (defCls != null) {
+                        Class<?> defValueClass= defCls.val();
+                        Validate.isTrue(getterType.isAssignableFrom(defValueClass),
+                            "Property '%s': @DefaultsToClass value (%s) not assignable to getter type (%s)",
+                            mName, defValueClass.getName(), getterType.getName());
+                        defaults.put(mName, defValueClass.newInstance());
                     }
                 }
-                
+
                 Validate.isTrue( readerPropNames.equals(builderPropNames), "Reader properties match builder properties");
-                return new ImmutablePair<Set<String>, Map<String,Function>>(readerPropNames,transformers);
+                return new Metadata(readerPropNames, transformers, defaults);
             }
 
             @SuppressWarnings("unchecked")
@@ -232,13 +280,19 @@ public class ReflectiveConfigurator {
             }
      
             @SuppressWarnings("unchecked")
-            public Reader buildTheReader(Map<String, Object> valueMap) 
+            public Reader buildTheReader(Map<String, Object> valueMap)
             {
+                // fill in any unset properties from the @DefaultsTo* annotations
+                for (Map.Entry<String, Object> e : defaults.entrySet()) {
+                    if (!valueMap.containsKey(e.getKey())) {
+                        valueMap.put(e.getKey(), e.getValue());
+                    }
+                }
                 // verify that we have values for all needed properties
                 Set<String> suppliedKeys= valueMap.keySet();
                 Set<String> toBeResolved=  new HashSet<String>(propNames);
                 toBeResolved.removeAll(suppliedKeys);
-                
+
                 //check that all properties are assigned
                 if (toBeResolved.isEmpty())
                     return (Reader)

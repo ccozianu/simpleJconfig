@@ -12,6 +12,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Categories.ExcludeCategory;
 
 import me.mywiki.configurator.ReflectiveConfigurator;
+import me.mywiki.configurator.ReflectiveConfigurator.DefaultsToInteger;
+import me.mywiki.configurator.ReflectiveConfigurator.DefaultsToString;
 import me.mywiki.configurator.ReflectiveConfigurator.TransformBy;
 import me.mywiki.configurator.ReflectiveConfigurator.MissingPropertyException;
 
@@ -87,6 +89,28 @@ public class ReflectiveConfiguratorTests {
     }
 
     /**
+     * Reader/builder pair where method names line up but the setter
+     * parameter type doesn't match the getter return type.
+     */
+    public static interface MismatchedTypesConfig {
+        String property1();
+        int property2();
+
+        public static interface Builder {
+            // wrong: takes int instead of String
+            Builder property1(int v);
+            Builder property2(int v);
+            MismatchedTypesConfig done();
+        }
+    }
+
+    @Test ( expected = RuntimeException.class )
+    public void testMismatchedSetterTypeThrows() {
+        ReflectiveConfigurator.configBuilderFor(
+            MismatchedTypesConfig.class, MismatchedTypesConfig.Builder.class);
+    }
+
+    /**
      * Test that a value set in the builder (at compile time)
      * is transformed by a function, at runtime
      */
@@ -129,6 +153,39 @@ public class ReflectiveConfiguratorTests {
         assertThat(ts, StringContains.containsString("transformedVal=val2.val2"));
         assertThat(ts, StringContains.containsString("strVal2=val2"));
     }
-    
 
+
+    /**
+     * Reader declares defaults via @DefaultsToString / @DefaultsToInteger.
+     * The builder leaves those properties unset; the framework should fall back
+     * to the annotated defaults instead of throwing MissingPropertyException.
+     */
+    public static interface ConfigWithDefaults {
+        @DefaultsToString(val = "localhost")
+        String host();
+
+        @DefaultsToInteger(val = 5432)
+        int port();
+
+        String username();
+
+        public static interface Builder {
+            Builder host(String v);
+            Builder port(int v);
+            Builder username(String v);
+            ConfigWithDefaults done();
+        }
+    }
+
+    @Test
+    public void testDefaultsAnnotationsAreApplied() {
+        ConfigWithDefaults cfg = ReflectiveConfigurator
+                .configBuilderFor(ConfigWithDefaults.class, ConfigWithDefaults.Builder.class)
+                .username("admin")
+                .done();
+
+        assertThat(cfg.username(), is("admin"));
+        assertThat(cfg.host(), is("localhost"));
+        assertThat(cfg.port(), is(5432));
+    }
 }

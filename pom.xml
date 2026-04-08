@@ -61,6 +61,9 @@
   </dependencies>
   <build>
       <plugins>
+          <!-- Disabled: only needed for `mvn deploy`, and its parent POMs live on the
+               dead repository.sonatype.org host, which stalls every build at startup
+               (extensions=true forces resolution regardless of phase).
           <plugin>
 		      <groupId>org.sonatype.plugins</groupId>
 		      <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -72,6 +75,7 @@
 		        <autoReleaseAfterClose>true</autoReleaseAfterClose>
 		      </configuration>
    		</plugin>
+          -->
    		<plugin>
 	      <groupId>org.apache.maven.plugins</groupId>
 	      <artifactId>maven-source-plugin</artifactId>

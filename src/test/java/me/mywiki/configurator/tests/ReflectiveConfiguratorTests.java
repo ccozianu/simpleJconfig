@@ -87,6 +87,28 @@ public class ReflectiveConfiguratorTests {
     }
 
     /**
+     * Reader/builder pair where method names line up but the setter
+     * parameter type doesn't match the getter return type.
+     */
+    public static interface MismatchedTypesConfig {
+        String property1();
+        int property2();
+
+        public static interface Builder {
+            // wrong: takes int instead of String
+            Builder property1(int v);
+            Builder property2(int v);
+            MismatchedTypesConfig done();
+        }
+    }
+
+    @Test ( expected = RuntimeException.class )
+    public void testMismatchedSetterTypeThrows() {
+        ReflectiveConfigurator.configBuilderFor(
+            MismatchedTypesConfig.class, MismatchedTypesConfig.Builder.class);
+    }
+
+    /**
      * Test that a value set in the builder (at compile time)
      * is transformed by a function, at runtime
      */

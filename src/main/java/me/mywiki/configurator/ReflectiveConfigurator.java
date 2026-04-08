@@ -175,7 +175,8 @@ public class ReflectiveConfigurator {
                 Validate.isTrue(builderClass_.isInterface(), "builder should be an interface"); 
                 
                 Set<String> builderPropNames= new HashSet<>();
-                
+                Map<String, Class<?>> builderPropTypes= new HashMap<>();
+
                 for (Method m: builderClass_.getDeclaredMethods()) {
                     String mName= m.getName();
                     if (mName.equals("done")) {
@@ -187,12 +188,13 @@ public class ReflectiveConfigurator {
                     Validate.isTrue(1 == m.getParameterCount(), "setter method: "+mName );
                     Validate.isTrue(builderClass_.equals(m.getReturnType()), "returning a builder for"+mName );
                     builderPropNames.add(mName);
+                    builderPropTypes.put(mName, m.getParameterTypes()[0]);
                 }
 
                 
                 Set <String> readerPropNames=  new HashSet<String>();
                 Map<String, Function> transformers= new HashMap<>();
-                
+
                 for (Method m: readerClass_.getMethods()) {
                     String mName= m.getName();
                     if (mName.equals("cloneBuilder")) {
@@ -205,10 +207,18 @@ public class ReflectiveConfigurator {
                     readerPropNames.add(mName);
                     TransformBy transform= m.getDeclaredAnnotation(TransformBy.class);
                     if (transform != null) {
-                       transformers.put(mName, transform._fun().newInstance()); 
+                       transformers.put(mName, transform._fun().newInstance());
+                    }
+                    // type-check: builder setter parameter type must match reader getter return type
+                    Class<?> setterType= builderPropTypes.get(mName);
+                    if (setterType != null) {
+                        Class<?> getterType= m.getReturnType();
+                        Validate.isTrue( getterType.equals(setterType),
+                            "Property '%s': builder setter type (%s) must match reader getter type (%s)",
+                            mName, setterType.getName(), getterType.getName());
                     }
                 }
-                
+
                 Validate.isTrue( readerPropNames.equals(builderPropNames), "Reader properties match builder properties");
                 return new ImmutablePair<Set<String>, Map<String,Function>>(readerPropNames,transformers);
             }
